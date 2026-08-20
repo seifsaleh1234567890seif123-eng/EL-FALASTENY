@@ -90,6 +90,12 @@ class CloudSyncManager {
         if (window.app && typeof window.app.renderAll === 'function') {
           window.app.renderAll();
         }
+      } else {
+        // Cloud is empty! Auto-seed from local data if available
+        const localGames = JSON.parse(localStorage.getItem('falasteny_sys_games_v1')) || [];
+        if (localGames.length > 0) {
+          this.pushGames(localGames);
+        }
       }
     });
 
@@ -101,6 +107,11 @@ class CloudSyncManager {
         localStorage.setItem('falasteny_sys_accounts_v1', JSON.stringify(accounts));
         if (window.app && typeof window.app.renderAll === 'function') {
           window.app.renderAll();
+        }
+      } else {
+        const localAccs = JSON.parse(localStorage.getItem('falasteny_sys_accounts_v1')) || [];
+        if (localAccs.length > 0) {
+          this.pushAccounts(localAccs);
         }
       }
     });
@@ -114,6 +125,11 @@ class CloudSyncManager {
         if (window.app && typeof window.app.renderAll === 'function') {
           window.app.renderAll();
         }
+      } else {
+        const localHistory = JSON.parse(localStorage.getItem('falasteny_sys_history_v1')) || [];
+        if (localHistory.length > 0) {
+          this.pushHistory(localHistory);
+        }
       }
     });
 
@@ -122,6 +138,9 @@ class CloudSyncManager {
       const data = snapshot.val();
       if (data && data.username && data.password) {
         localStorage.setItem('falasteny_sys_auth_v1', JSON.stringify(data));
+      } else {
+        const localAuth = JSON.parse(localStorage.getItem('falasteny_sys_auth_v1')) || { username: 'admin', password: '123' };
+        this.pushAuth(localAuth);
       }
     });
   }
