@@ -81,55 +81,33 @@ class CloudSyncManager {
   startRealtimeListeners() {
     if (!this.isCloudEnabled || !this.dbRef) return;
 
-    // 1. Listen to Games
+    // 1. Listen to Games (Keyed by unique ID)
     this.dbRef.ref('falasteny_games').on('value', snapshot => {
       const data = snapshot.val();
-      if (data !== null && data !== undefined) {
-        const games = Array.isArray(data) ? data : Object.values(data);
-        localStorage.setItem('falasteny_sys_games_v1', JSON.stringify(games));
-        if (window.app && typeof window.app.renderAll === 'function') {
-          window.app.renderAll();
-        }
-      } else {
-        // Cloud is empty! Auto-seed from local data if available
-        const localGames = JSON.parse(localStorage.getItem('falasteny_sys_games_v1')) || [];
-        if (localGames.length > 0) {
-          this.pushGames(localGames);
-        }
+      const games = data ? (Array.isArray(data) ? data.filter(Boolean) : Object.values(data)) : [];
+      localStorage.setItem('falasteny_sys_games_v1', JSON.stringify(games));
+      if (window.app && typeof window.app.renderAll === 'function') {
+        window.app.renderAll();
       }
     });
 
-    // 2. Listen to Accounts
+    // 2. Listen to Accounts (Keyed by unique ID)
     this.dbRef.ref('falasteny_accounts').on('value', snapshot => {
       const data = snapshot.val();
-      if (data !== null && data !== undefined) {
-        const accounts = Array.isArray(data) ? data : Object.values(data);
-        localStorage.setItem('falasteny_sys_accounts_v1', JSON.stringify(accounts));
-        if (window.app && typeof window.app.renderAll === 'function') {
-          window.app.renderAll();
-        }
-      } else {
-        const localAccs = JSON.parse(localStorage.getItem('falasteny_sys_accounts_v1')) || [];
-        if (localAccs.length > 0) {
-          this.pushAccounts(localAccs);
-        }
+      const accounts = data ? (Array.isArray(data) ? data.filter(Boolean) : Object.values(data)) : [];
+      localStorage.setItem('falasteny_sys_accounts_v1', JSON.stringify(accounts));
+      if (window.app && typeof window.app.renderAll === 'function') {
+        window.app.renderAll();
       }
     });
 
-    // 3. Listen to History
+    // 3. Listen to History (Keyed by unique ID)
     this.dbRef.ref('falasteny_history').on('value', snapshot => {
       const data = snapshot.val();
-      if (data !== null && data !== undefined) {
-        const history = Array.isArray(data) ? data : Object.values(data);
-        localStorage.setItem('falasteny_sys_history_v1', JSON.stringify(history));
-        if (window.app && typeof window.app.renderAll === 'function') {
-          window.app.renderAll();
-        }
-      } else {
-        const localHistory = JSON.parse(localStorage.getItem('falasteny_sys_history_v1')) || [];
-        if (localHistory.length > 0) {
-          this.pushHistory(localHistory);
-        }
+      const history = data ? (Array.isArray(data) ? data.filter(Boolean) : Object.values(data)) : [];
+      localStorage.setItem('falasteny_sys_history_v1', JSON.stringify(history));
+      if (window.app && typeof window.app.renderAll === 'function') {
+        window.app.renderAll();
       }
     });
 
@@ -138,35 +116,63 @@ class CloudSyncManager {
       const data = snapshot.val();
       if (data && data.username && data.password) {
         localStorage.setItem('falasteny_sys_auth_v1', JSON.stringify(data));
-      } else {
-        const localAuth = JSON.parse(localStorage.getItem('falasteny_sys_auth_v1')) || { username: 'admin', password: '123' };
-        this.pushAuth(localAuth);
       }
     });
   }
 
-  // Push local changes to cloud
+  // Push full lists as ID-indexed objects to avoid array sparse index ghost keys
   pushGames(games) {
     if (this.isCloudEnabled && this.dbRef) {
-      this.dbRef.ref('falasteny_games').set(games);
+      const obj = {};
+      if (Array.isArray(games)) {
+        games.forEach(g => { if (g && g.id) obj[g.id] = g; });
+      }
+      this.dbRef.ref('falasteny_games').set(obj);
     }
   }
 
   pushAccounts(accounts) {
     if (this.isCloudEnabled && this.dbRef) {
-      this.dbRef.ref('falasteny_accounts').set(accounts);
+      const obj = {};
+      if (Array.isArray(accounts)) {
+        accounts.forEach(a => { if (a && a.id) obj[a.id] = a; });
+      }
+      this.dbRef.ref('falasteny_accounts').set(obj);
     }
   }
 
   pushHistory(history) {
     if (this.isCloudEnabled && this.dbRef) {
-      this.dbRef.ref('falasteny_history').set(history);
+      const obj = {};
+      if (Array.isArray(history)) {
+        history.forEach(h => { if (h && h.id) obj[h.id] = h; });
+      }
+      this.dbRef.ref('falasteny_history').set(obj);
     }
   }
 
   pushAuth(auth) {
     if (this.isCloudEnabled && this.dbRef) {
       this.dbRef.ref('falasteny_auth').set(auth);
+    }
+  }
+
+  // Direct specific item delete helpers
+  removeAccount(accountId) {
+    if (this.isCloudEnabled && this.dbRef) {
+      this.dbRef.ref(`falasteny_accounts/${accountId}`).remove();
+    }
+  }
+
+  removeGame(gameId) {
+    if (this.isCloudEnabled && this.dbRef) {
+      this.dbRef.ref(`falasteny_games/${gameId}`).remove();
+    }
+  }
+
+  removeOrder(orderId) {
+    if (this.isCloudEnabled && this.dbRef) {
+      this.dbRef.ref(`falasteny_history/${orderId}`).remove();
     }
   }
 
@@ -178,10 +184,10 @@ class CloudSyncManager {
       const history = JSON.parse(localStorage.getItem('falasteny_sys_history_v1')) || [];
       const auth = JSON.parse(localStorage.getItem('falasteny_sys_auth_v1')) || { username: 'admin', password: '123' };
 
-      await this.dbRef.ref('falasteny_games').set(games);
-      await this.dbRef.ref('falasteny_accounts').set(accounts);
-      await this.dbRef.ref('falasteny_history').set(history);
-      await this.dbRef.ref('falasteny_auth').set(auth);
+      this.pushGames(games);
+      this.pushAccounts(accounts);
+      this.pushHistory(history);
+      this.pushAuth(auth);
       return true;
     } catch (err) {
       console.error('Error uploading to cloud:', err);

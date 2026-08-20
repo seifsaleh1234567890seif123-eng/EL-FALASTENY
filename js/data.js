@@ -169,6 +169,9 @@ class DataStore {
     this.saveGames(games);
     let accounts = this.getAccounts().filter(a => a.gameId !== gameId);
     this.saveAccounts(accounts);
+    if (window.cloudSync && typeof window.cloudSync.removeGame === 'function') {
+      window.cloudSync.removeGame(gameId);
+    }
   }
 
   // Accounts CRUD
@@ -237,6 +240,9 @@ class DataStore {
   deleteAccount(accountId) {
     let accounts = this.getAccounts().filter(a => a.id !== accountId);
     this.saveAccounts(accounts);
+    if (window.cloudSync && typeof window.cloudSync.removeAccount === 'function') {
+      window.cloudSync.removeAccount(accountId);
+    }
   }
 
   getFilteredAccounts(gameId, slotType) {
@@ -451,6 +457,9 @@ class DataStore {
   deleteOrder(orderId) {
     let history = this.getHistory().filter(o => o.id !== orderId);
     this.saveHistory(history);
+    if (window.cloudSync && typeof window.cloudSync.removeOrder === 'function') {
+      window.cloudSync.removeOrder(orderId);
+    }
   }
 
   getHistory() {
