@@ -674,41 +674,96 @@
       <form id="addAccountForm" onsubmit="app.handleAddAccount(event)" class="space-y-4">
         <input type="hidden" id="addAccountGameId">
 
-        <div>
+        <!-- 1. Slot Modes (For Games & Subscriptions) -->
+        <div id="accSlotModeWrap">
           <label class="block text-xs font-bold text-cyan-300 mb-1.5 flex items-center gap-1.5">
             <i data-lucide="layers" class="w-4 h-4"></i>
             <span>نوع الفئات المتاحة لهذا الإيميل *</span>
           </label>
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" id="accSlotModeContainer">
-            <label class="cursor-pointer" id="optPrySec">
-              <input type="radio" name="accSlotMode" value="pry_sec" class="peer sr-only">
-              <div class="p-2.5 rounded-2xl border border-white/10 bg-slate-900/80 peer-checked:border-purple-400 peer-checked:bg-purple-500/20 text-center transition">
-                <div class="text-xs font-black text-purple-300">Pry + Sec</div>
-                <div class="text-[9px] text-slate-400 mt-0.5">أساسي وثانوي</div>
-              </div>
-            </label>
 
-            <label class="cursor-pointer" id="optSecOnly">
-              <input type="radio" name="accSlotMode" value="sec" class="peer sr-only">
-              <div class="p-2.5 rounded-2xl border border-white/10 bg-slate-900/80 peer-checked:border-blue-400 peer-checked:bg-blue-500/20 text-center transition">
-                <div class="text-xs font-black text-blue-400">Sec فقط</div>
-                <div class="text-[9px] text-slate-400 mt-0.5">Secondary</div>
-              </div>
-            </label>
-
-            <label class="cursor-pointer" id="optAll">
-              <input type="radio" name="accSlotMode" value="all" checked class="peer sr-only">
+          <!-- Games Modes (All, Pry & Off, Sec) -->
+          <div class="grid grid-cols-3 gap-2" id="accGameSlotModeContainer">
+            <label class="cursor-pointer">
+              <input type="radio" name="accGameSlotMode" value="all" checked class="peer sr-only">
               <div class="p-2.5 rounded-2xl border border-white/10 bg-slate-900/80 peer-checked:border-cyan-400 peer-checked:bg-cyan-500/20 text-center transition">
                 <div class="text-xs font-black text-cyan-300">الكل (مع Off)</div>
                 <div class="text-[9px] text-slate-400 mt-0.5">Pry+Sec+Off</div>
               </div>
             </label>
 
-            <label class="cursor-pointer" id="optPryOff">
-              <input type="radio" name="accSlotMode" value="pry_off" class="peer sr-only">
+            <label class="cursor-pointer">
+              <input type="radio" name="accGameSlotMode" value="pry_off" class="peer sr-only">
               <div class="p-2.5 rounded-2xl border border-white/10 bg-slate-900/80 peer-checked:border-emerald-400 peer-checked:bg-emerald-500/20 text-center transition">
                 <div class="text-xs font-black text-emerald-400">Pry & Off</div>
                 <div class="text-[9px] text-slate-400 mt-0.5">Primary+Off</div>
+              </div>
+            </label>
+
+            <label class="cursor-pointer">
+              <input type="radio" name="accGameSlotMode" value="sec" class="peer sr-only">
+              <div class="p-2.5 rounded-2xl border border-white/10 bg-slate-900/80 peer-checked:border-blue-400 peer-checked:bg-blue-500/20 text-center transition">
+                <div class="text-xs font-black text-blue-400">Sec فقط</div>
+                <div class="text-[9px] text-slate-400 mt-0.5">Secondary</div>
+              </div>
+            </label>
+          </div>
+
+          <!-- Subscription Modes (Pry + Sec, Pry فقط, Sec فقط) -->
+          <div class="grid grid-cols-3 gap-2 hidden" id="accSubSlotModeContainer">
+            <label class="cursor-pointer">
+              <input type="radio" name="accSubSlotMode" value="pry_sec" checked class="peer sr-only" onchange="app.toggleSubPlatformVisibility('add')">
+              <div class="p-2.5 rounded-2xl border border-white/10 bg-slate-900/80 peer-checked:border-purple-400 peer-checked:bg-purple-500/20 text-center transition">
+                <div class="text-xs font-black text-purple-300">Pry + Sec</div>
+                <div class="text-[9px] text-slate-400 mt-0.5">أساسي وثانوي</div>
+              </div>
+            </label>
+
+            <label class="cursor-pointer">
+              <input type="radio" name="accSubSlotMode" value="pry_only" class="peer sr-only" onchange="app.toggleSubPlatformVisibility('add')">
+              <div class="p-2.5 rounded-2xl border border-white/10 bg-slate-900/80 peer-checked:border-emerald-400 peer-checked:bg-emerald-500/20 text-center transition">
+                <div class="text-xs font-black text-emerald-400">Pry فقط</div>
+                <div class="text-[9px] text-slate-400 mt-0.5">Primary</div>
+              </div>
+            </label>
+
+            <label class="cursor-pointer">
+              <input type="radio" name="accSubSlotMode" value="sec" class="peer sr-only" onchange="app.toggleSubPlatformVisibility('add')">
+              <div class="p-2.5 rounded-2xl border border-white/10 bg-slate-900/80 peer-checked:border-blue-400 peer-checked:bg-blue-500/20 text-center transition">
+                <div class="text-xs font-black text-blue-400">Sec فقط</div>
+                <div class="text-[9px] text-slate-400 mt-0.5">Secondary</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- 2. Subscription Devices Selector (PS4 / PS5 / PS4+PS5) -->
+        <div id="accSubPlatformWrap" class="hidden">
+          <label class="block text-xs font-bold text-cyan-300 mb-1.5 flex items-center gap-1.5">
+            <i data-lucide="tv" class="w-4 h-4 text-cyan-400"></i>
+            <span>تحديد جهاز تفعيل الـ Primary (Pry Console) *</span>
+          </label>
+          <div class="grid grid-cols-3 gap-2">
+            <label class="cursor-pointer">
+              <input type="radio" name="accSubPlatform" value="both" checked class="peer sr-only">
+              <div class="p-2.5 rounded-2xl border border-white/10 bg-slate-900/80 peer-checked:border-cyan-400 peer-checked:bg-cyan-500/20 text-center transition">
+                <div class="text-xs font-black text-cyan-300">PS4 + PS5</div>
+                <div class="text-[9px] text-slate-400 mt-0.5">الجهازين معاً</div>
+              </div>
+            </label>
+
+            <label class="cursor-pointer">
+              <input type="radio" name="accSubPlatform" value="ps4" class="peer sr-only">
+              <div class="p-2.5 rounded-2xl border border-white/10 bg-slate-900/80 peer-checked:border-cyan-400 peer-checked:bg-cyan-500/20 text-center transition">
+                <div class="text-xs font-black text-cyan-300">PS4 فقط</div>
+                <div class="text-[9px] text-slate-400 mt-0.5">Primary PS4</div>
+              </div>
+            </label>
+
+            <label class="cursor-pointer">
+              <input type="radio" name="accSubPlatform" value="ps5" class="peer sr-only">
+              <div class="p-2.5 rounded-2xl border border-white/10 bg-slate-900/80 peer-checked:border-purple-400 peer-checked:bg-purple-500/20 text-center transition">
+                <div class="text-xs font-black text-purple-300">PS5 فقط</div>
+                <div class="text-[9px] text-slate-400 mt-0.5">Primary PS5</div>
               </div>
             </label>
           </div>
@@ -796,30 +851,17 @@
       <form id="editAccountForm" onsubmit="app.handleSaveEditedAccount(event)" class="space-y-4">
         <input type="hidden" id="editAccountId">
 
-        <div>
+        <!-- 1. Slot Modes (For Games & Subscriptions) -->
+        <div id="editAccSlotModeWrap">
           <label class="block text-xs font-bold text-cyan-300 mb-1.5 flex items-center gap-1.5">
             <i data-lucide="layers" class="w-4 h-4"></i>
             <span>نوع الفئات المتاحة *</span>
           </label>
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <label class="cursor-pointer">
-              <input type="radio" name="editAccSlotMode" value="pry_sec" class="peer sr-only">
-              <div class="p-2.5 rounded-2xl border border-white/10 bg-slate-900/80 peer-checked:border-purple-400 peer-checked:bg-purple-500/20 text-center transition">
-                <div class="text-xs font-black text-purple-300">Pry + Sec</div>
-                <div class="text-[9px] text-slate-400 mt-0.5">أساسي وثانوي</div>
-              </div>
-            </label>
 
+          <!-- Games Modes (All, Pry & Off, Sec) -->
+          <div class="grid grid-cols-3 gap-2" id="editAccGameSlotModeContainer">
             <label class="cursor-pointer">
-              <input type="radio" name="editAccSlotMode" value="sec" class="peer sr-only">
-              <div class="p-2.5 rounded-2xl border border-white/10 bg-slate-900/80 peer-checked:border-blue-400 peer-checked:bg-blue-500/20 text-center transition">
-                <div class="text-xs font-black text-blue-400">Sec فقط</div>
-                <div class="text-[9px] text-slate-400 mt-0.5">Secondary</div>
-              </div>
-            </label>
-
-            <label class="cursor-pointer">
-              <input type="radio" name="editAccSlotMode" value="all" class="peer sr-only">
+              <input type="radio" name="editAccGameSlotMode" value="all" class="peer sr-only">
               <div class="p-2.5 rounded-2xl border border-white/10 bg-slate-900/80 peer-checked:border-cyan-400 peer-checked:bg-cyan-500/20 text-center transition">
                 <div class="text-xs font-black text-cyan-300">الكل</div>
                 <div class="text-[9px] text-slate-400 mt-0.5">Pry+Sec+Off</div>
@@ -827,10 +869,78 @@
             </label>
 
             <label class="cursor-pointer">
-              <input type="radio" name="editAccSlotMode" value="pry_off" class="peer sr-only">
+              <input type="radio" name="editAccGameSlotMode" value="pry_off" class="peer sr-only">
               <div class="p-2.5 rounded-2xl border border-white/10 bg-slate-900/80 peer-checked:border-emerald-400 peer-checked:bg-emerald-500/20 text-center transition">
                 <div class="text-xs font-black text-emerald-400">Pry & Off</div>
                 <div class="text-[9px] text-slate-400 mt-0.5">Primary+Off</div>
+              </div>
+            </label>
+
+            <label class="cursor-pointer">
+              <input type="radio" name="editAccGameSlotMode" value="sec" class="peer sr-only">
+              <div class="p-2.5 rounded-2xl border border-white/10 bg-slate-900/80 peer-checked:border-blue-400 peer-checked:bg-blue-500/20 text-center transition">
+                <div class="text-xs font-black text-blue-400">Sec فقط</div>
+                <div class="text-[9px] text-slate-400 mt-0.5">Secondary</div>
+              </div>
+            </label>
+          </div>
+
+          <!-- Subscription Modes (Pry + Sec, Pry فقط, Sec فقط) -->
+          <div class="grid grid-cols-3 gap-2 hidden" id="editAccSubSlotModeContainer">
+            <label class="cursor-pointer">
+              <input type="radio" name="editAccSubSlotMode" value="pry_sec" class="peer sr-only" onchange="app.toggleSubPlatformVisibility('edit')">
+              <div class="p-2.5 rounded-2xl border border-white/10 bg-slate-900/80 peer-checked:border-purple-400 peer-checked:bg-purple-500/20 text-center transition">
+                <div class="text-xs font-black text-purple-300">Pry + Sec</div>
+                <div class="text-[9px] text-slate-400 mt-0.5">أساسي وثانوي</div>
+              </div>
+            </label>
+
+            <label class="cursor-pointer">
+              <input type="radio" name="editAccSubSlotMode" value="pry_only" class="peer sr-only" onchange="app.toggleSubPlatformVisibility('edit')">
+              <div class="p-2.5 rounded-2xl border border-white/10 bg-slate-900/80 peer-checked:border-emerald-400 peer-checked:bg-emerald-500/20 text-center transition">
+                <div class="text-xs font-black text-emerald-400">Pry فقط</div>
+                <div class="text-[9px] text-slate-400 mt-0.5">Primary</div>
+              </div>
+            </label>
+
+            <label class="cursor-pointer">
+              <input type="radio" name="editAccSubSlotMode" value="sec" class="peer sr-only" onchange="app.toggleSubPlatformVisibility('edit')">
+              <div class="p-2.5 rounded-2xl border border-white/10 bg-slate-900/80 peer-checked:border-blue-400 peer-checked:bg-blue-500/20 text-center transition">
+                <div class="text-xs font-black text-blue-400">Sec فقط</div>
+                <div class="text-[9px] text-slate-400 mt-0.5">Secondary</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- 2. Subscription Devices Selector (PS4 / PS5 / PS4+PS5) -->
+        <div id="editAccSubPlatformWrap" class="hidden">
+          <label class="block text-xs font-bold text-cyan-300 mb-1.5 flex items-center gap-1.5">
+            <i data-lucide="tv" class="w-4 h-4 text-cyan-400"></i>
+            <span>تحديد جهاز تفعيل الـ Primary (Pry Console) *</span>
+          </label>
+          <div class="grid grid-cols-3 gap-2">
+            <label class="cursor-pointer">
+              <input type="radio" name="editAccSubPlatform" value="both" class="peer sr-only">
+              <div class="p-2.5 rounded-2xl border border-white/10 bg-slate-900/80 peer-checked:border-cyan-400 peer-checked:bg-cyan-500/20 text-center transition">
+                <div class="text-xs font-black text-cyan-300">PS4 + PS5</div>
+                <div class="text-[9px] text-slate-400 mt-0.5">الجهازين معاً</div>
+              </div>
+            </label>
+
+            <label class="cursor-pointer">
+              <input type="radio" name="editAccSubPlatform" value="ps4" class="peer sr-only">
+              <div class="p-2.5 rounded-2xl border border-white/10 bg-slate-900/80 peer-checked:border-cyan-400 peer-checked:bg-cyan-500/20 text-center transition">
+                <div class="text-xs font-black text-cyan-300">PS4 فقط</div>
+                <div class="text-[9px] text-slate-400 mt-0.5">Primary PS4</div>
+              </div>
+            </label>
+
+            <label class="cursor-pointer">
+              <input type="radio" name="editAccSubPlatform" value="ps5" class="peer sr-only">
+              <div class="p-2.5 rounded-2xl border border-white/10 bg-slate-900/80 peer-checked:border-purple-400 peer-checked:bg-purple-500/20 text-center transition">
+                <div class="text-xs font-black text-purple-300">PS5 فقط</div>
+                <div class="text-[9px] text-slate-400 mt-0.5">Primary PS5</div>
               </div>
             </label>
           </div>

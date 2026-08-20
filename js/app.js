@@ -482,7 +482,37 @@ class AppController {
                 <span class="text-[10px] ${isSub ? 'text-purple-400' : 'text-cyan-400'}">اضغط للعرض</span>
               </div>
 
-              <div class="grid ${isSub ? 'grid-cols-2' : 'grid-cols-3'} gap-2">
+              ${isSub ? `
+              <!-- Subscriptions: Primary (Pry) & Secondary (Sec) -->
+              <div class="grid grid-cols-2 gap-2">
+                <!-- Primary Button -->
+                <button onclick="app.openSlotModal('${game.id}', 'pry')"
+                        class="p-2.5 rounded-2xl border flex flex-col items-center justify-center transition ${counts.pryTotal > 0 ? 'badge-pry hover:scale-105' : 'bg-slate-900/50 border-white/5 opacity-50 cursor-not-allowed'}">
+                  <span class="text-[11px] font-black uppercase">Primary</span>
+                  <div class="text-[10px] font-bold mt-0.5 font-mono leading-tight">
+                    ${prySubtitle}
+                  </div>
+                  <span class="text-[9px] mt-0.5 ${counts.pryTotal > 0 ? 'text-emerald-300' : 'text-slate-500'}">
+                    ${counts.pryTotal > 0 ? 'متاح للتفعيل' : 'غير متوفر'}
+                  </span>
+                </button>
+
+                <!-- Secondary Button -->
+                <button onclick="app.openSlotModal('${game.id}', 'sec')"
+                        class="p-2.5 rounded-2xl border flex flex-col items-center justify-center transition ${counts.sec > 0 ? 'badge-sec hover:scale-105' : 'bg-slate-900/50 border-white/5 opacity-50 cursor-not-allowed'}">
+                  <span class="text-[11px] font-black uppercase">Secondary</span>
+                  <div class="text-xs font-bold mt-0.5 flex items-center gap-1 font-mono">
+                    <span class="text-[10px]">Sec:</span>
+                    <span class="text-sm font-black text-blue-300">${counts.sec}</span>
+                  </div>
+                  <span class="text-[9px] mt-0.5 ${counts.sec > 0 ? 'text-blue-300' : 'text-slate-500'}">
+                    ${counts.sec > 0 ? 'متاح الآن' : 'غير متوفر'}
+                  </span>
+                </button>
+              </div>
+              ` : `
+              <!-- Games: Primary, Secondary, Offline -->
+              <div class="grid grid-cols-3 gap-2">
                 
                 <!-- Primary (Pry) Button -->
                 <button onclick="app.openSlotModal('${game.id}', 'pry')"
@@ -509,7 +539,6 @@ class AppController {
                   </span>
                 </button>
 
-                ${!isSub ? `
                 <!-- Offline (Off) Button (Games Only) -->
                 <button onclick="app.openSlotModal('${game.id}', 'off')"
                         class="p-2 rounded-2xl border flex flex-col items-center justify-center transition ${counts.offTotal > 0 ? 'badge-off hover:scale-105' : 'bg-slate-900/50 border-white/5 opacity-50 cursor-not-allowed'}">
@@ -521,9 +550,8 @@ class AppController {
                     ${counts.offTotal > 0 ? 'متاح للأوفلاين' : 'غير متوفر'}
                   </span>
                 </button>
-                ` : ''}
-
               </div>
+              `}
             </div>
 
             <!-- Card Bottom Actions -->
@@ -611,8 +639,16 @@ class AppController {
         const isSubscription = game.itemType === 'subscription';
 
         let modeBadge = '';
-        if (mode === 'pry_sec') {
-          modeBadge = '<span class="bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded text-[10px] font-bold">Pry + Sec</span>';
+        if (isSubscription) {
+          if (mode === 'sec') {
+            modeBadge = '<span class="bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded text-[10px] font-bold">Sec فقط</span>';
+          } else if (mode === 'pry_only') {
+            const subDev = acc.subPlatform === 'ps4' ? 'PS4 فقط' : (acc.subPlatform === 'ps5' ? 'PS5 فقط' : 'PS4 + PS5');
+            modeBadge = `<span class="bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 px-2 py-0.5 rounded text-[10px] font-bold">Pry فقط [${subDev}]</span>`;
+          } else {
+            const subDev = acc.subPlatform === 'ps4' ? 'PS4' : (acc.subPlatform === 'ps5' ? 'PS5' : 'PS4+PS5');
+            modeBadge = `<span class="bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded text-[10px] font-bold">Pry [${subDev}] + Sec</span>`;
+          }
         } else if (mode === 'pry_off') {
           modeBadge = '<span class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded text-[10px] font-bold">Pry & Off</span>';
         } else if (mode === 'sec') {
@@ -626,23 +662,23 @@ class AppController {
           durationBadge = `<span class="bg-purple-500/25 text-purple-300 border border-purple-500/40 px-2.5 py-0.5 rounded-full text-[10px] font-black shadow flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> <span>${acc.duration || 'سنة (12 شهر)'}</span></span>`;
         }
 
-        const canPryPs4 = supportsPs4 && (mode === 'pry_off' || mode === 'all' || mode === 'pry_sec') && !isPryPs4Taken;
-        const canPryPs5 = supportsPs5 && (mode === 'pry_off' || mode === 'all' || mode === 'pry_sec') && !isPryPs5Taken;
-        const canSec = (mode === 'sec' || mode === 'all' || mode === 'pry_sec') && !isSecTaken;
-        const canOffPs4 = !isSubscription && supportsPs4 && (mode === 'pry_off' || mode === 'all') && !isOffPs4Taken && !isPryPs4Taken;
-        const canOffPs5 = !isSubscription && supportsPs5 && (mode === 'pry_off' || mode === 'all') && !isOffPs5Taken && !isPryPs5Taken;
+        const canPryPs4 = supportsPs4 && acc.pryPs4Status === 'available';
+        const canPryPs5 = supportsPs5 && acc.pryPs5Status === 'available';
+        const canSec = (mode === 'sec' || mode === 'all' || mode === 'pry_sec') && acc.secStatus === 'available';
+        const canOffPs4 = !isSubscription && supportsPs4 && (mode === 'pry_off' || mode === 'all') && acc.offPs4Status === 'available' && acc.pryPs4Status !== 'taken';
+        const canOffPs5 = !isSubscription && supportsPs5 && (mode === 'pry_off' || mode === 'all') && acc.offPs5Status === 'available' && acc.pryPs5Status !== 'taken';
 
         let remainingSummary = [];
-        if (supportsPs4 && mode !== 'sec') {
-          if (!isPryPs4Taken) remainingSummary.push('<span class="text-emerald-400 font-bold">PS4 متاح Primary</span>');
+        if (supportsPs4 && acc.pryPs4Status !== 'disabled') {
+          if (acc.pryPs4Status === 'available') remainingSummary.push('<span class="text-emerald-400 font-bold">PS4 متاح Primary</span>');
           else remainingSummary.push('<span class="text-rose-400 font-bold">PS4 محجوز Primary</span>');
         }
-        if (supportsPs5 && mode !== 'sec') {
-          if (!isPryPs5Taken) remainingSummary.push('<span class="text-emerald-400 font-bold">PS5 متاح Primary</span>');
+        if (supportsPs5 && acc.pryPs5Status !== 'disabled') {
+          if (acc.pryPs5Status === 'available') remainingSummary.push('<span class="text-emerald-400 font-bold">PS5 متاح Primary</span>');
           else remainingSummary.push('<span class="text-rose-400 font-bold">PS5 محجوز Primary</span>');
         }
-        if (mode !== 'pry_off') {
-          if (!isSecTaken) remainingSummary.push('<span class="text-blue-400 font-bold">Sec متاح</span>');
+        if (mode !== 'pry_off' && mode !== 'pry_only') {
+          if (acc.secStatus === 'available') remainingSummary.push('<span class="text-blue-400 font-bold">Sec متاح</span>');
           else remainingSummary.push('<span class="text-slate-500 font-bold">Sec محجوز</span>');
         }
 
@@ -1010,6 +1046,30 @@ class AppController {
   }
 
   // ================= ADD / EDIT / DELETE ACCOUNT =================
+  toggleSubPlatformVisibility(mode = 'add') {
+    if (mode === 'add') {
+      const subSlotMode = document.querySelector('input[name="accSubSlotMode"]:checked')?.value || 'pry_sec';
+      const wrap = document.getElementById('accSubPlatformWrap');
+      if (wrap) {
+        if (subSlotMode === 'sec') {
+          wrap.classList.add('hidden');
+        } else {
+          wrap.classList.remove('hidden');
+        }
+      }
+    } else {
+      const subSlotMode = document.querySelector('input[name="editAccSubSlotMode"]:checked')?.value || 'pry_sec';
+      const wrap = document.getElementById('editAccSubPlatformWrap');
+      if (wrap) {
+        if (subSlotMode === 'sec') {
+          wrap.classList.add('hidden');
+        } else {
+          wrap.classList.remove('hidden');
+        }
+      }
+    }
+  }
+
   openAddAccountModal(gameId, gameTitle) {
     document.getElementById('addAccountForm').reset();
     document.getElementById('addAccountGameId').value = gameId;
@@ -1018,27 +1078,30 @@ class AppController {
     const game = window.db.getGames().find(g => g.id === gameId);
     const isSub = game && game.itemType === 'subscription';
 
-    const optAll = document.getElementById('optAll');
-    const optPryOff = document.getElementById('optPryOff');
-    const optPrySec = document.getElementById('optPrySec');
-    const optSecOnly = document.getElementById('optSecOnly');
+    const accGameSlotContainer = document.getElementById('accGameSlotModeContainer');
+    const accSubSlotContainer = document.getElementById('accSubSlotModeContainer');
+    const accSubPlatformWrap = document.getElementById('accSubPlatformWrap');
     const accDurationWrap = document.getElementById('accDurationWrap');
 
     if (isSub) {
+      if (accGameSlotContainer) accGameSlotContainer.classList.add('hidden');
+      if (accSubSlotContainer) accSubSlotContainer.classList.remove('hidden');
       if (accDurationWrap) accDurationWrap.classList.remove('hidden');
-      if (optAll) optAll.style.display = 'none';
-      if (optPryOff) optPryOff.style.display = 'none';
-      if (optPrySec) {
-        optPrySec.style.display = 'block';
-        const prySecInput = optPrySec.querySelector('input');
-        if (prySecInput) prySecInput.checked = true;
-      }
+      
+      const prySecRadio = document.querySelector('input[name="accSubSlotMode"][value="pry_sec"]');
+      if (prySecRadio) prySecRadio.checked = true;
+
+      const bothRadio = document.querySelector('input[name="accSubPlatform"][value="both"]');
+      if (bothRadio) bothRadio.checked = true;
+
+      this.toggleSubPlatformVisibility('add');
     } else {
+      if (accGameSlotContainer) accGameSlotContainer.classList.remove('hidden');
+      if (accSubSlotContainer) accSubSlotContainer.classList.add('hidden');
+      if (accSubPlatformWrap) accSubPlatformWrap.classList.add('hidden');
       if (accDurationWrap) accDurationWrap.classList.add('hidden');
-      if (optAll) optAll.style.display = 'block';
-      if (optPryOff) optPryOff.style.display = 'block';
-      if (optPrySec) optPrySec.style.display = 'block';
-      const allInput = optAll?.querySelector('input');
+      
+      const allInput = document.querySelector('input[name="accGameSlotMode"][value="all"]');
       if (allInput) allInput.checked = true;
     }
 
@@ -1052,10 +1115,20 @@ class AppController {
     const email = document.getElementById('accEmailInput').value.trim();
     const password = document.getElementById('accPasswordInput').value.trim();
     const notes = document.getElementById('accNotesInput').value.trim();
-    const slotMode = document.querySelector('input[name="accSlotMode"]:checked')?.value || 'all';
-
+    
     const game = window.db.getGames().find(g => g.id === gameId);
     const isSub = game && game.itemType === 'subscription';
+
+    let slotMode = 'all';
+    let subPlatform = '';
+
+    if (isSub) {
+      slotMode = document.querySelector('input[name="accSubSlotMode"]:checked')?.value || 'pry_sec';
+      subPlatform = document.querySelector('input[name="accSubPlatform"]:checked')?.value || 'both';
+    } else {
+      slotMode = document.querySelector('input[name="accGameSlotMode"]:checked')?.value || 'all';
+    }
+
     const durationRadio = document.querySelector('input[name="accDurationRadio"]:checked');
     const duration = isSub ? (durationRadio?.value || 'سنة (12 شهر)') : '';
 
@@ -1064,7 +1137,7 @@ class AppController {
       return;
     }
 
-    window.db.addAccount({ gameId, email, password, slotMode, duration, notes });
+    window.db.addAccount({ gameId, email, password, slotMode, duration, notes, subPlatform });
     this.closeModals();
     this.showToast('تمت إضافة الإيميل بنجاح إلى ' + (isSub ? 'الاشتراك! 👑' : 'اللعبة! 🔑'), 'success');
     this.renderAll();
@@ -1093,19 +1166,39 @@ class AppController {
     document.getElementById('editAccPasswordInput').value = acc.password;
     document.getElementById('editAccNotesInput').value = acc.notes || '';
 
+    const editGameSlotContainer = document.getElementById('editAccGameSlotModeContainer');
+    const editSubSlotContainer = document.getElementById('editAccSubSlotModeContainer');
+    const editSubPlatformWrap = document.getElementById('editAccSubPlatformWrap');
     const editDurationWrap = document.getElementById('editAccDurationWrap');
+
     if (isSub) {
+      if (editGameSlotContainer) editGameSlotContainer.classList.add('hidden');
+      if (editSubSlotContainer) editSubSlotContainer.classList.remove('hidden');
       if (editDurationWrap) editDurationWrap.classList.remove('hidden');
+
+      const mode = (acc.slotMode === 'sec' || acc.slotMode === 'pry_only') ? acc.slotMode : 'pry_sec';
+      const subSlotRadio = document.querySelector(`input[name="editAccSubSlotMode"][value="${mode}"]`);
+      if (subSlotRadio) subSlotRadio.checked = true;
+
+      const curSubPlatform = acc.subPlatform || 'both';
+      const subRadio = document.querySelector(`input[name="editAccSubPlatform"][value="${curSubPlatform}"]`);
+      if (subRadio) subRadio.checked = true;
+
       const curDuration = acc.duration || 'سنة (12 شهر)';
       const dRadio = document.querySelector(`input[name="editAccDurationRadio"][value="${curDuration}"]`);
       if (dRadio) dRadio.checked = true;
-    } else {
-      if (editDurationWrap) editDurationWrap.classList.add('hidden');
-    }
 
-    const mode = acc.slotMode || 'all';
-    const targetRadio = document.querySelector(`input[name="editAccSlotMode"][value="${mode}"]`);
-    if (targetRadio) targetRadio.checked = true;
+      this.toggleSubPlatformVisibility('edit');
+    } else {
+      if (editGameSlotContainer) editGameSlotContainer.classList.remove('hidden');
+      if (editSubSlotContainer) editSubSlotContainer.classList.add('hidden');
+      if (editSubPlatformWrap) editSubPlatformWrap.classList.add('hidden');
+      if (editDurationWrap) editDurationWrap.classList.add('hidden');
+
+      const mode = acc.slotMode || 'all';
+      const targetRadio = document.querySelector(`input[name="editAccGameSlotMode"][value="${mode}"]`);
+      if (targetRadio) targetRadio.checked = true;
+    }
 
     document.getElementById('editAccountModal').classList.remove('hidden');
     if (window.lucide) lucide.createIcons();
@@ -1117,11 +1210,21 @@ class AppController {
     const email = document.getElementById('editAccEmailInput').value.trim();
     const password = document.getElementById('editAccPasswordInput').value.trim();
     const notes = document.getElementById('editAccNotesInput').value.trim();
-    const slotMode = document.querySelector('input[name="editAccSlotMode"]:checked')?.value || 'all';
 
     const acc = window.db.getAccounts().find(a => a.id === accId);
     const game = acc ? window.db.getGames().find(g => g.id === acc.gameId) : null;
     const isSub = game && game.itemType === 'subscription';
+
+    let slotMode = 'all';
+    let subPlatform = '';
+
+    if (isSub) {
+      slotMode = document.querySelector('input[name="editAccSubSlotMode"]:checked')?.value || 'pry_sec';
+      subPlatform = document.querySelector('input[name="editAccSubPlatform"]:checked')?.value || 'both';
+    } else {
+      slotMode = document.querySelector('input[name="editAccGameSlotMode"]:checked')?.value || 'all';
+    }
+
     const dRadio = document.querySelector('input[name="editAccDurationRadio"]:checked');
     const duration = isSub ? (dRadio?.value || 'سنة (12 شهر)') : '';
 
@@ -1130,7 +1233,7 @@ class AppController {
       return;
     }
 
-    window.db.updateAccount(accId, { email, password, slotMode, duration, notes });
+    window.db.updateAccount(accId, { email, password, slotMode, duration, notes, subPlatform });
     this.closeModals();
     this.showToast('تم تحديث بيانات الحساب بنجاح! ✏️', 'success');
 

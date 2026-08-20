@@ -189,19 +189,61 @@ class DataStore {
 
   addAccount(accountData) {
     const accounts = this.getAccounts();
+    const game = this.getGames().find(g => g.id === accountData.gameId);
+    const isSub = game && game.itemType === 'subscription';
+    const slotMode = accountData.slotMode || (isSub ? 'pry_sec' : 'all');
+    const subPlatform = accountData.subPlatform || 'both'; // 'both' | 'ps4' | 'ps5'
+
+    let pryPs4Status = 'available';
+    let pryPs5Status = 'available';
+    let secStatus = 'available';
+    let offPs4Status = isSub ? 'disabled' : 'available';
+    let offPs5Status = isSub ? 'disabled' : 'available';
+
+    if (isSub) {
+      if (slotMode === 'sec') {
+        pryPs4Status = 'disabled';
+        pryPs5Status = 'disabled';
+        secStatus = 'available';
+      } else {
+        // 'pry_sec' or 'pry_only'
+        secStatus = (slotMode === 'pry_only') ? 'disabled' : 'available';
+        if (subPlatform === 'ps4') {
+          pryPs4Status = 'available';
+          pryPs5Status = 'disabled';
+        } else if (subPlatform === 'ps5') {
+          pryPs4Status = 'disabled';
+          pryPs5Status = 'available';
+        } else {
+          pryPs4Status = 'available';
+          pryPs5Status = 'available';
+        }
+      }
+    } else {
+      if (slotMode === 'sec') {
+        pryPs4Status = 'disabled';
+        pryPs5Status = 'disabled';
+        offPs4Status = 'disabled';
+        offPs5Status = 'disabled';
+      } else if (slotMode === 'pry_off') {
+        secStatus = 'disabled';
+      }
+    }
+
     const newAccount = {
       id: 'acc-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
       gameId: accountData.gameId,
       email: accountData.email.trim(),
       password: accountData.password.trim(),
-      slotMode: accountData.slotMode || 'all', // 'pry_off' | 'sec' | 'all' | 'pry_sec'
-      duration: accountData.duration || '', // 'سنة (12 شهر)' | '3 شهور' | 'شهر واحد' | etc.
+      slotMode,
+      subPlatform: isSub ? subPlatform : '',
+      duration: accountData.duration || '',
       notes: accountData.notes || '',
-      pryPs4Status: 'available',
-      pryPs5Status: 'available',
-      secStatus: 'available',
-      offPs4Status: 'available',
-      offPs5Status: 'available',
+      pryPs4Status,
+      pryPs5Status,
+      secStatus,
+      offPs4Status,
+      offPs5Status,
       createdAt: new Date().toISOString()
     };
     accounts.push(newAccount);
@@ -214,11 +256,40 @@ class DataStore {
     const index = accounts.findIndex(a => a.id === accountId);
     if (index === -1) return false;
 
+    const game = this.getGames().find(g => g.id === accounts[index].gameId);
+    const isSub = game && game.itemType === 'subscription';
+
     accounts[index].email = updatedData.email.trim();
     accounts[index].password = updatedData.password.trim();
     if (updatedData.slotMode) accounts[index].slotMode = updatedData.slotMode;
     if (updatedData.duration !== undefined) accounts[index].duration = updatedData.duration;
-    accounts[index].notes = updatedData.notes || '';
+    if (updatedData.notes !== undefined) accounts[index].notes = updatedData.notes || '';
+
+    const slotMode = accounts[index].slotMode || 'all';
+
+    if (isSub) {
+      const subPlatform = updatedData.subPlatform !== undefined ? updatedData.subPlatform : (accounts[index].subPlatform || 'both');
+      accounts[index].subPlatform = subPlatform;
+
+      if (slotMode === 'sec') {
+        accounts[index].pryPs4Status = 'disabled';
+        accounts[index].pryPs5Status = 'disabled';
+        if (accounts[index].secStatus !== 'taken') accounts[index].secStatus = 'available';
+      } else {
+        accounts[index].secStatus = (slotMode === 'pry_only') ? 'disabled' : (accounts[index].secStatus === 'taken' ? 'taken' : 'available');
+        if (subPlatform === 'ps4') {
+          if (accounts[index].pryPs4Status !== 'taken') accounts[index].pryPs4Status = 'available';
+          accounts[index].pryPs5Status = 'disabled';
+        } else if (subPlatform === 'ps5') {
+          accounts[index].pryPs4Status = 'disabled';
+          if (accounts[index].pryPs5Status !== 'taken') accounts[index].pryPs5Status = 'available';
+        } else {
+          if (accounts[index].pryPs4Status !== 'taken') accounts[index].pryPs4Status = 'available';
+          if (accounts[index].pryPs5Status !== 'taken') accounts[index].pryPs5Status = 'available';
+        }
+      }
+    }
+
     accounts[index].updatedAt = new Date().toISOString();
 
     this.saveAccounts(accounts);
@@ -257,23 +328,23 @@ class DataStore {
       return accounts.filter(acc => {
         const mode = acc.slotMode || 'all';
         if (mode === 'sec') return false;
-        const hasPryPs4 = supportsPs4 && acc.pryPs4Status !== 'taken';
-        const hasPryPs5 = supportsPs5 && acc.pryPs5Status !== 'taken';
+        const hasPryPs4 = supportsPs4 && acc.pryPs4Status === 'available';
+        const hasPryPs5 = supportsPs5 && acc.pryPs5Status === 'available';
         return hasPryPs4 || hasPryPs5;
       });
     } else if (slotType === 'sec') {
       return accounts.filter(acc => {
         const mode = acc.slotMode || 'all';
-        if (mode === 'pry_off') return false;
-        return acc.secStatus !== 'taken';
+        if (mode === 'pry_off' || mode === 'pry_only') return false;
+        return acc.secStatus === 'available';
       });
     } else if (slotType === 'off') {
       if (isSubscription) return [];
       return accounts.filter(acc => {
         const mode = acc.slotMode || 'all';
-        if (mode === 'sec' || mode === 'pry_sec') return false;
-        const hasOffPs4 = supportsPs4 && acc.offPs4Status !== 'taken' && acc.pryPs4Status !== 'taken';
-        const hasOffPs5 = supportsPs5 && acc.offPs5Status !== 'taken' && acc.pryPs5Status !== 'taken';
+        if (mode === 'sec' || mode === 'pry_sec' || mode === 'pry_only') return false;
+        const hasOffPs4 = supportsPs4 && acc.offPs4Status === 'available' && acc.pryPs4Status !== 'taken';
+        const hasOffPs5 = supportsPs5 && acc.offPs5Status === 'available' && acc.pryPs5Status !== 'taken';
         return hasOffPs4 || hasOffPs5;
       });
     }
@@ -292,16 +363,16 @@ class DataStore {
 
     accounts.forEach(acc => {
       const mode = acc.slotMode || 'all';
-      if (mode === 'pry_off' || mode === 'all' || mode === 'pry_sec') {
-        if (supportsPs4 && acc.pryPs4Status !== 'taken') pryPs4++;
-        if (supportsPs5 && acc.pryPs5Status !== 'taken') pryPs5++;
+      if (mode === 'pry_off' || mode === 'all' || mode === 'pry_sec' || mode === 'pry_only') {
+        if (supportsPs4 && acc.pryPs4Status === 'available') pryPs4++;
+        if (supportsPs5 && acc.pryPs5Status === 'available') pryPs5++;
       }
       if (mode === 'sec' || mode === 'all' || mode === 'pry_sec') {
-        if (acc.secStatus !== 'taken') sec++;
+        if (acc.secStatus === 'available') sec++;
       }
       if (!isSubscription && (mode === 'pry_off' || mode === 'all')) {
-        if (supportsPs4 && acc.offPs4Status !== 'taken' && acc.pryPs4Status !== 'taken') offPs4++;
-        if (supportsPs5 && acc.offPs5Status !== 'taken' && acc.pryPs5Status !== 'taken') offPs5++;
+        if (supportsPs4 && acc.offPs4Status === 'available' && acc.pryPs4Status !== 'taken') offPs4++;
+        if (supportsPs5 && acc.offPs5Status === 'available' && acc.pryPs5Status !== 'taken') offPs5++;
       }
     });
     
