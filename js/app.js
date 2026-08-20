@@ -1986,10 +1986,13 @@ ${order.notes ? `📝 *ملاحظات:* ${order.notes}\n` : ''}━━━━━�
   }
 
   renderAll() {
-    this.renderStats();
-    if (this.currentTab === 'games') this.renderGames();
-    if (this.currentTab === 'history') this.renderHistory();
-    if (window.lucide) lucide.createIcons();
+    if (this._renderRaf) cancelAnimationFrame(this._renderRaf);
+    this._renderRaf = requestAnimationFrame(() => {
+      this.renderStats();
+      if (this.currentTab === 'games') this.renderGames();
+      if (this.currentTab === 'history') this.renderHistory();
+      if (window.lucide) lucide.createIcons();
+    });
   }
 }
 
